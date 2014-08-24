@@ -12,14 +12,24 @@ var WebSocketServer = require('ws').Server,
     });
 
 wss.broadcast = function(data) {
-    for(var i in this.clients)
+    for (var i in this.clients)
         this.clients[i].send(data);
 };
 
+var counter = 0;
 wss.on('connection', function (ws) {
-    ws.on('message', function (message) {
-        console.dir(message);
+    ws.id = counter;
+    ws.send(JSON.stringify({
+        type: 'welcome',
+        id: ws.id,
+    }));
 
-        wss.broadcast(message);
+    ws.on('message', function (message) {
+        var data = JSON.parse(message);
+        data.type = 'update';
+        data.id = ws.id;
+        wss.broadcast(JSON.stringify(data));
     });
+
+    counter++;
 });

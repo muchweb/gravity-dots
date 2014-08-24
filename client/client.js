@@ -1,45 +1,79 @@
-var connection = new WebSocket('ws://localhost:8080', ['soap', 'xmpp']);
+var connection = new WebSocket('ws://localhost:8080', [
+        'soap',
+        'xmpp',
+    ]),
+    Participant = function (id) {
+        if (typeof id === 'undefined')
+            id = null;
 
-
+        this.id = id;
+        this.x = 0;
+        this.y = 0;
+    },
+    participants = {},
+    me = null,
+    canvas = document.getElementById('canvas-main'),
+    context = canvas.getContext('2d'),
+    rect = canvas.getBoundingClientRect();
 
 // Log errors
 connection.onerror = function (error) {
-  console.log('WebSocket Error ' + error);
+    window.alert('Count not connect to server! ' + error.message);
 };
 
-// Log messages from the server
-connection.onmessage = function (e) {
-    window.console.log(e.data);
-    var coords = e.data.split('x'),
-        context = canvas.getContext('2d'),
-        rect = canvas.getBoundingClientRect();
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = "#FF0000";
-    var x = coords[0] * canvas.width;
-    var y = coords[1] * canvas.height;
-    context.fillRect(x, y, 2, 2);
+// Receiving messages from the server
+connection.onmessage = function (event) {
+    var data = JSON.parse(event.data);
+
+    // Adding myself
+    if (data.type === 'welcome') {
+        me = new Participant(data.id);
+    }
+
+    if (data.type === 'update') {
+        if (typeof participants[data.id] === 'undefined') {
+            participants[data.id] = new Participant(data.id);
+        }
+
+        participants[data.id].x = data.x;
+        participants[data.id].y = data.y;
+    }
+
+    draw();
 };
 
-function writeMessage(canvas, message) {
-    var context = canvas.getContext('2d');
+function draw() {
     context.clearRect(0, 0, canvas.width, canvas.height);
-    context.font = '18pt Calibri';
-    context.fillStyle = 'black';
-    context.fillText(message, 10, 25);
-    // ctx.fillStyle = "#FF0000";
-    // ctx.fillRect(0, 0, 150,75);
+
+    for (n in participants) {
+        if (participants.hasOwnProperty(n)) {
+            context.fillStyle = "#FF0000";
+            var x = participants[n].x * canvas.width;
+            var y = participants[n].y * canvas.height;
+            context.fillRect(x, y, 10, 10);
+            context.font = '18pt Calibri';
+            context.fillStyle = 'black';
+            context.fillText(participants[n].id, x, y);
+        }
+    }
+
+    writeMessage();
 }
 
-var canvas = document.getElementById('myCanvas'),
-    context = canvas.getContext('2d');
+function writeMessage () {
+    context.font = '18pt Calibri';
+    context.fillStyle = 'black';
+    context.fillText('My id is' + me.id, 20, 20);
+}
+
 
 
 // When the connection is open, send some data to the server
 connection.onopen = function () {
-
+    canvas.addEventListener('mousemove', function (evt) {
+        connection.send(JSON.stringify({
+            x: evt.clientX / rect.width,
+            y: evt.clientY / rect.height,
+        }));
+    }, false);
 };
-
-canvas.addEventListener('mousemove', function(evt) {
-    var rect = canvas.getBoundingClientRect();
-    connection.send((evt.clientX / rect.width) + 'x' + (evt.clientY / rect.height));
-}, false);
