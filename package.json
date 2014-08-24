@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/muchweb/gravity-dots",
   "dependencies": {
+    "express": "^4.8.5",
     "ws": "^0.4.32"
   }
 }
