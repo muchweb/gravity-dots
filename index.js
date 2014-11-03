@@ -3,7 +3,11 @@ var express = require('express'),
 
 // Serving static client files
 app.use(express.static(__dirname + '/client'));
-app.listen(3000);
+var server = app.listen(3000, function () {
+    var address = server.address();
+    console.log('Listening on http://%s:%s', address.address, address.port)
+})
+
 
 // Starting ws server
 var WebSocketServer = require('ws').Server,

@@ -16,9 +16,13 @@ var connection = new WebSocket('ws://localhost:8080', [
     context = canvas.getContext('2d'),
     rect = canvas.getBoundingClientRect();
 
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+draw();
+
 // Log errors
 connection.onerror = function (error) {
-    window.alert('Count not connect to server! ' + error.message);
+    window.alert('Coult not connect to server! ' + error.message);
 };
 
 // Receiving messages from the server
@@ -38,8 +42,6 @@ connection.onmessage = function (event) {
         participants[data.id].x = data.x;
         participants[data.id].y = data.y;
     }
-
-    draw();
 };
 
 function draw() {
@@ -47,26 +49,37 @@ function draw() {
 
     for (n in participants) {
         if (participants.hasOwnProperty(n)) {
-            context.fillStyle = "#FF0000";
             var x = participants[n].x * canvas.width;
             var y = participants[n].y * canvas.height;
-            context.fillRect(x, y, 10, 10);
-            context.font = '18pt Calibri';
-            context.fillStyle = 'black';
-            context.fillText(participants[n].id, x, y);
+            context.fillRect(x - 5, y - 5, 10, 10);
+            writeMessage(participants[n].id, x, y);
+
+            context.strokeStyle = '#333';
+            for (k in participants) {
+                if (participants.hasOwnProperty(n)) {
+                    context.beginPath();
+                    context.moveTo(participants[n].x * canvas.width, participants[n].y * canvas.height);
+                    context.lineTo(participants[k].x * canvas.width, participants[k].y * canvas.height);
+                    context.stroke();
+                }
+            }
         }
     }
 
-    writeMessage();
+    if (me)
+        writeMessage('My id is' + me.id);
+    requestAnimationFrame(draw);
 }
 
-function writeMessage () {
-    context.font = '18pt Calibri';
-    context.fillStyle = 'black';
-    context.fillText('My id is' + me.id, 20, 20);
+function writeMessage (message, x, y) {
+    if (typeof x === 'undefined')
+        x = 20;
+    if (typeof y === 'undefined')
+        y = 20;
+    context.font = '12pt Monospace';
+    context.fillStyle = '#888';
+    context.fillText(message, x, y);
 }
-
-
 
 // When the connection is open, send some data to the server
 connection.onopen = function () {
